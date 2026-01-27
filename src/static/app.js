@@ -10,8 +10,9 @@ document.addEventListener("DOMContentLoaded", () => {
       const response = await fetch("/activities");
       const activities = await response.json();
 
-      // Clear loading message
+      // Clear loading message and dropdown options
       activitiesList.innerHTML = "";
+      activitySelect.innerHTML = '<option value="">-- Select an activity --</option>';
 
       // Populate activities list
       Object.entries(activities).forEach(([name, details]) => {
@@ -20,31 +21,62 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const spotsLeft = details.max_participants - details.participants.length;
 
-        // Create participants list HTML
-        let participantsHTML = '';
-        if (details.participants.length > 0) {
-          participantsHTML = `
-            <div class="participants-section">
-              <p><strong>Participants:</strong></p>
-              <ul class="participants-list">
-                ${details.participants.map(email => `
-                  <li>
-                    ${email}
-                    <button class="delete-btn" data-activity="${name}" data-email="${email}">×</button>
-                  </li>
-                `).join('')}
-              </ul>
-            </div>
-          `;
-        }
+        // Create header and description
+        const header = document.createElement("h4");
+        header.textContent = name;
+        
+        const description = document.createElement("p");
+        description.textContent = details.description;
+        
+        const schedule = document.createElement("p");
+        const scheduleLabel = document.createElement("strong");
+        scheduleLabel.textContent = "Schedule: ";
+        schedule.appendChild(scheduleLabel);
+        schedule.appendChild(document.createTextNode(details.schedule));
+        
+        const availability = document.createElement("p");
+        const availabilityLabel = document.createElement("strong");
+        availabilityLabel.textContent = "Availability: ";
+        availability.appendChild(availabilityLabel);
+        availability.appendChild(document.createTextNode(`${spotsLeft} spots left`));
+        
+        activityCard.appendChild(header);
+        activityCard.appendChild(description);
+        activityCard.appendChild(schedule);
+        activityCard.appendChild(availability);
 
-        activityCard.innerHTML = `
-          <h4>${name}</h4>
-          <p>${details.description}</p>
-          <p><strong>Schedule:</strong> ${details.schedule}</p>
-          <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
-          ${participantsHTML}
-        `;
+        // Create participants section if there are participants
+        if (details.participants.length > 0) {
+          const participantsSection = document.createElement("div");
+          participantsSection.className = "participants-section";
+          
+          const participantsTitle = document.createElement("p");
+          const titleLabel = document.createElement("strong");
+          titleLabel.textContent = "Participants:";
+          participantsTitle.appendChild(titleLabel);
+          participantsSection.appendChild(participantsTitle);
+          
+          const participantsList = document.createElement("ul");
+          participantsList.className = "participants-list";
+          
+          details.participants.forEach(email => {
+            const li = document.createElement("li");
+            li.textContent = email;
+            
+            const deleteBtn = document.createElement("button");
+            deleteBtn.className = "delete-btn";
+            deleteBtn.textContent = "×";
+            deleteBtn.dataset.activity = name;
+            deleteBtn.dataset.email = email;
+            deleteBtn.addEventListener('click', handleUnregister);
+            
+            li.appendChild(deleteBtn);
+            participantsList.appendChild(li);
+          });
+          
+          participantsSection.appendChild(participantsList);
+          activityCard.appendChild(participantsSection);
+        }
 
         activitiesList.appendChild(activityCard);
 
@@ -53,11 +85,6 @@ document.addEventListener("DOMContentLoaded", () => {
         option.value = name;
         option.textContent = name;
         activitySelect.appendChild(option);
-      });
-
-      // Add event listeners to delete buttons
-      document.querySelectorAll('.delete-btn').forEach(btn => {
-        btn.addEventListener('click', handleUnregister);
       });
     } catch (error) {
       activitiesList.innerHTML = "<p>Failed to load activities. Please try again later.</p>";

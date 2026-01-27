@@ -197,3 +197,29 @@ def test_activity_count(client):
     
     # Should have 9 activities (3 original + 2 sports + 2 artistic + 2 intellectual)
     assert len(data) == 9
+
+
+def test_signup_at_max_capacity(client):
+    """Test that signups are rejected when activity is at capacity"""
+    activity = "Chess Club"
+    
+    # Chess Club has max_participants of 12 and currently has 2 participants
+    # Add 10 more to reach capacity
+    for i in range(10):
+        email = f"student{i}@mergington.edu"
+        response = client.post(f"/activities/{activity}/signup?email={email}")
+        assert response.status_code == 200
+    
+    # Verify we're at capacity
+    assert len(activities[activity]["participants"]) == 12
+    
+    # Try to add one more student (should fail)
+    email = "overflow@mergington.edu"
+    response = client.post(f"/activities/{activity}/signup?email={email}")
+    assert response.status_code == 400
+    data = response.json()
+    assert "capacity" in data["detail"].lower()
+    
+    # Verify student was not added
+    assert email not in activities[activity]["participants"]
+
