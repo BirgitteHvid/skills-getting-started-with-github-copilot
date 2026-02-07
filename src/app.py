@@ -57,6 +57,7 @@ activities = {
         "max_participants": 15,
         "participants": []
     },
+    # ...existing code...
     "Drama Club": {
         "description": "Theater arts and performance training",
         "schedule": "Tuesdays, 4:00 PM - 6:00 PM",
@@ -76,6 +77,19 @@ activities = {
         "participants": []
     }
 }
+
+# API endpoint to remove a participant from an activity
+from fastapi import Request
+
+@app.delete("/activities/{activity_name}/participants/{email}")
+async def remove_participant(activity_name: str, email: str, request: Request):
+    if activity_name not in activities:
+        raise HTTPException(status_code=404, detail="Activity not found")
+    participants = activities[activity_name]["participants"]
+    if email not in participants:
+        raise HTTPException(status_code=404, detail="Participant not found")
+    participants.remove(email)
+    return {"message": f"Removed {email} from {activity_name}"}
 
 
 @app.get("/")
